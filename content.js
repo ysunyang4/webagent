@@ -749,7 +749,7 @@
   })(),
     desensitization: GM_getValue("webagent_desensitization", true),
     autoExecute: GM_getValue("webagent_auto_execute", true),
-    maxConsecutiveSteps: Math.min(50, Math.max(1, parseInt(GM_getValue("webagent_max_consecutive_steps", 4), 10) || 4)),
+    maxConsecutiveSteps: Math.min(50, Math.max(1, parseInt(GM_getValue("webagent_max_consecutive_steps", GM_getValue("nexus_max_consecutive_steps", 4)), 10) || 4)),
     sendDelay: GM_getValue("webagent_send_delay", 3.0),
     autoRetry: GM_getValue("webagent_auto_retry_rate_limit", true),
     themeMode: GM_getValue("webagent_theme_mode", "auto"), // "auto" | "light" | "dark"
@@ -859,6 +859,7 @@
       sendDelayLabel: "Result Submission Delay Buffer",
       sendDelayDesc: "* Increase interval to prevent cloud rate-limits.",
       consecutiveStepsLabel: "Max Consecutive Steps Limit",
+      consecutiveStepsUnit: "rounds",
       consecutiveStepsDesc: "* Pauses after limit reached to prevent infinite loops. Send a new message to reset.",
       retryRateLimitLabel: "Auto Cooldown & Retry on Rate Limits",
       toolsCardTitle: "Available MCP Tools",
@@ -1052,6 +1053,7 @@
       sendDelayLabel: "回填延迟缓冲",
       sendDelayDesc: "* 增加请求间隔秒数，彻底消除网页模型接口速率限制。",
       consecutiveStepsLabel: "连续自动调用上限",
+      consecutiveStepsUnit: "轮",
       consecutiveStepsDesc: "* 达到上限后自动暂停；你再发送一条新消息即可重置计数。",
       retryRateLimitLabel: "遭遇网页接口限流时自动冷却并恢复",
       toolsCardTitle: "已就绪 MCP 工具",
@@ -1245,6 +1247,7 @@
       sendDelayLabel: "送信遅延バッファ",
       sendDelayDesc: "* クラウドモデルのレート制限を回避するため送信間隔を調整します。",
       consecutiveStepsLabel: "連続自動実行回数の上限",
+      consecutiveStepsUnit: "回",
       consecutiveStepsDesc: "* 上限に達すると自動停止します。新しいメッセージを送るとリセットされます。",
       retryRateLimitLabel: "レート制限検知時の自動クールダウンと再試行",
       toolsCardTitle: "利用可能な MCP ツール",
@@ -1438,6 +1441,7 @@
       sendDelayLabel: "Verzögerungspuffer für Rückmeldung",
       sendDelayDesc: "* Erhöht das Intervall, um Ratenbegrenzungen der Cloud-Modelle zu verhindern.",
       consecutiveStepsLabel: "Limit für aufeinanderfolgende Schritte",
+      consecutiveStepsUnit: "Runden",
       consecutiveStepsDesc: "* Pausiert bei Erreichen des Limits zur Verhinderung von Endlosschleifen.",
       retryRateLimitLabel: "Automatische Abkühlung und Wiederholung bei Ratenbegrenzung",
       toolsCardTitle: "Verfügbare MCP-Werkzeuge",
@@ -5657,10 +5661,10 @@ Collaboration Guidelines:
                 </div>
                 <div class="nexus-field" style="padding: 6px 10px; background: rgba(0,0,0,0.18); border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.15);">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <label class="nexus-label" id="nexus-lbl-maxsteps" style="margin-bottom: 0; display: inline-flex; align-items: center;">${nxSvg("refresh", "nexus-ui-icon")}${t('maxConsecutiveStepsLabel')}</label>
-                    <span id="nexus-steps-val" style="font-size: 12px; font-weight: 700; color: ${CURRENT_THEME.primaryColor};">${CONFIG.maxConsecutiveSteps || 50}</span>
+                    <label class="nexus-label" id="nexus-lbl-maxsteps" style="margin-bottom: 0; display: inline-flex; align-items: center;">${nxSvg("refresh", "nexus-ui-icon")}${t('consecutiveStepsLabel')}</label>
+                    <span id="nexus-steps-val" style="font-size: 12px; font-weight: 700; color: ${CURRENT_THEME.primaryColor};">${CONFIG.maxConsecutiveSteps} ${t('consecutiveStepsUnit')}</span>
                   </div>
-                  <input type="range" id="nexus-cfg-maxsteps" min="1" max="50" step="1" value="${CONFIG.maxConsecutiveSteps || 50}" style="width: 100%; accent-color: ${CURRENT_THEME.primaryColor}; cursor: pointer;" />
+                  <input type="range" id="nexus-cfg-maxsteps" min="1" max="50" step="1" value="${CONFIG.maxConsecutiveSteps}" style="width: 100%; accent-color: ${CURRENT_THEME.primaryColor}; cursor: pointer;" />
                 </div>
               </div>
             </div>
@@ -6497,13 +6501,13 @@ Collaboration Guidelines:
     }
 
     // 9.5 设置项：连续自动调用轮数上限滑动条
-    const stepsSlider = drawerEl.querySelector("#nexus-cfg-steps");
+    const stepsSlider = drawerEl.querySelector("#nexus-cfg-maxsteps");
     const stepsValEl = drawerEl.querySelector("#nexus-steps-val");
     if (stepsSlider && stepsValEl) {
       stepsSlider.addEventListener("input", (e) => {
         const val = Math.min(50, Math.max(1, parseInt(e.target.value, 10) || 4));
         CONFIG.maxConsecutiveSteps = val;
-        stepsValEl.innerText = `${val} 轮`;
+        stepsValEl.innerText = `${val} ${t('consecutiveStepsUnit')}`;
       });
       stepsSlider.addEventListener("change", (e) => {
         const val = Math.min(50, Math.max(1, parseInt(e.target.value, 10) || 4));
@@ -6761,8 +6765,10 @@ Collaboration Guidelines:
     const descDelay = drawerEl ? drawerEl.querySelector("#nexus-desc-delay") : null;
     if (descDelay) descDelay.innerText = t('sendDelayDesc');
 
-    const lblSteps = drawerEl ? drawerEl.querySelector("#nexus-lbl-steps") : null;
+    const lblSteps = drawerEl ? drawerEl.querySelector("#nexus-lbl-maxsteps") : null;
     if (lblSteps) setSafeHTML(lblSteps, `${nxSvg("refresh", "nexus-ui-icon")}${t('consecutiveStepsLabel')}`);
+    const valSteps = drawerEl ? drawerEl.querySelector("#nexus-steps-val") : null;
+    if (valSteps) valSteps.innerText = `${CONFIG.maxConsecutiveSteps} ${t('consecutiveStepsUnit')}`;
     const descSteps = drawerEl ? drawerEl.querySelector("#nexus-desc-steps") : null;
     if (descSteps) descSteps.innerText = t('consecutiveStepsDesc');
 
